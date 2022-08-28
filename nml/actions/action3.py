@@ -307,7 +307,6 @@ def parse_graphics_block_single_id(
     callbacks = []
     livery_override = None  # Used for rotor graphics
     layouts = []
-    custom_spritesets = []
     prepare_layout = None
     purchase_prepare_layout = None
     foundations = None
@@ -363,15 +362,6 @@ def parse_graphics_block_single_id(
                             )
                         prepend_action_list.extend(actions)
                         station_sprite_layouts[id.value] = layouts
-                    elif info["type"] == "custom_spritesets":
-                        if (
-                            not isinstance(graphics.result.value, expression.Array)
-                            or len(graphics.result.value.values) > 6
-                        ):
-                            raise generic.ScriptError(
-                                "'{}' must be an array of at most 6 elements".format(cb_name), cargo_id.pos
-                            )
-                        custom_spritesets = graphics.result.value.values
                     elif info["type"] == "prepare_layout":
                         if "purchase" in info:
                             assert purchase_prepare_layout is None
@@ -441,7 +431,7 @@ def parse_graphics_block_single_id(
             # Fill var10 dependant choices
             mapping = {0x02: (foundations, None)} if foundations else {}
             if var10map:
-                var10map.append_mapping(mapping, feature, prepend_action_list, default, custom_spritesets)
+                var10map.append_mapping(mapping, feature, prepend_action_list, default)
             # No need for in-between varaction2 if there are no registers to set and no var10 dependant choices
             if len(mapping) == 0:
                 if not varact2parser.var_list:
