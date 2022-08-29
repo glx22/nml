@@ -126,9 +126,9 @@ class Action2LayoutSprite:
         if self.get_register(nextreg) is not None:
             flags |= 1 << 5
         if self.feature == 0x04:
-            if self.var10_for_sprite is not None:
+            if self.var10_for_sprite:
                 flags |= 1 << 6
-            if self.var10_for_palette is not None:
+            if self.var10_for_palette:
                 flags |= 1 << 7
         file.print_wordx(flags)
 
@@ -150,9 +150,9 @@ class Action2LayoutSprite:
         if self.get_register("zoffset") is not None:
             self.write_register(file, "zoffset")
         if self.feature == 0x04:
-            if self.var10_for_sprite is not None:
+            if self.var10_for_sprite:
                 file.print_bytex(self.var10_for_sprite)
-            if self.var10_for_palette is not None:
+            if self.var10_for_palette:
                 file.print_bytex(self.var10_for_palette)
 
     def write_sprite_number(self, file):
@@ -282,7 +282,7 @@ class Action2LayoutSprite:
             assert self.feature == 0x04
             self.sprite_from_action1 = True
             if value.offset is not None:
-                offset = self._validate_offset(value.offset, value.spriteset, value.pos)
+                offset = self._validate_offset(value.offset, None, value.pos)
                 if offset is not None:
                     self.create_register(name, offset)
             self.var10_for_sprite = value.var10
@@ -319,7 +319,7 @@ class Action2LayoutSprite:
             assert self.feature == 0x04
             self.palette_from_action1 = True
             if value.offset is not None:
-                offset = self._validate_offset(value.offset, value.spriteset, value.pos)
+                offset = self._validate_offset(value.offset, None, value.pos)
                 if offset is not None:
                     self.create_register(name, offset)
             self.var10_for_palette = value.var10
@@ -439,7 +439,7 @@ class ParsedSpriteLayout:
                     sprite.write_registers(file)
                 file.newline()
 
-    def process(self, spritelayout, feature, param_map, actions, var10map=None):
+    def process(self, spritelayout, feature, param_map, actions):
         if not isinstance(param_map, list):
             param_map = [param_map]
 
@@ -452,13 +452,14 @@ class ParsedSpriteLayout:
             for param in layout_sprite.param_list:
                 param_val = action2var.reduce_varaction2_expr(param.value, action2var.get_scope(feature), param_map)
                 if isinstance(param_val, expression.SpriteGroupRef):
+                    if feature == 0x04:
+                        raise generic.ScriptError(
+                            "Sprite layouts for feature '{}' can't reference a spriteset.".format(general.feature_name(feature))
+                        )
                     spriteset = action2.resolve_spritegroup(param_val.name)
                     if not spriteset.is_spriteset():
                         raise generic.ScriptError("Expected a reference to a spriteset.", param_val.pos)
                     all_sprite_sets.append(spriteset)
-                    if feature == 0x04:
-                        assert var10map is not None
-                        param_val = var10map.translate(spriteset, param_val.param_list, param_val.pos)
                 param_list.append((param.name, param_val))
 
         actions.extend(action1.add_to_action1(all_sprite_sets, feature, spritelayout.pos))
@@ -619,52 +620,26 @@ def make_empty_layout_action2(feature, pos):
 
 
 class StationSpriteset(expression.Expression):
-    def __init__(self, spriteset, args, var10, pos=None):
+    def __init__(self, var10, offset, pos=None):
         expression.Expression.__init__(self, pos)
-        self.spriteset = spriteset
-        self.offset = args
         self.var10 = var10
-
-
-class StationSpritesetVar10Map:
-    def __init__(self):
-        self.spritesets = {}
-        self.var10 = 1  # Reserving 0 for SPRITESET() (basic action2)
-
-    def is_empty(self):
-        return self.var10 == 1
-
-    def translate(self, spriteset, args, pos):
-        if spriteset not in self.spritesets:
-            if self.var10 == 8:
-                raise generic.ScriptError("A station can't use more than 6 different sprite sets", pos)
-            self.spritesets[spriteset] = self.var10
-            self.var10 += 1 if self.var10 != 1 else 2  # Reserving 2 for custom foundations
-        return StationSpriteset(spriteset, args, self.spritesets[spriteset], pos)
-
-    def append_mapping(self, mapping, feature, actions, default):
-        for spriteset in self.spritesets:
-            if not spriteset.has_action2(feature):
-                real_action2 = action2real.make_simple_real_action2(
-                    feature,
-                    spriteset.name.value + " - feature {:02X}".format(feature),
-                    None,
-                    action1.get_action1_index(spriteset),
-                )
-                actions.append(real_action2)
-                spriteset.set_action2(real_action2, feature)
-            ref = expression.SpriteGroupRef(spriteset.name, [], None, spriteset.get_action2(feature))
-            # Skip default result
-            if ref == default:
-                continue
-            mapping[self.spritesets[spriteset]] = (ref, None)
-        return mapping
+        self.offset = offset
 
 
 def parse_station_layouts(feature, id, layouts):
-    # Add SPRITESET() to reference active spriteset, selected by basic action2
+    # Add SPRITESET(var10=0, offset=0) to reference active spriteset, selected by basic action2
     def parse_spriteset(name, args, pos, info):
-        return StationSpriteset(None, args, None, pos)
+        if len(args) > 2:
+            raise generic.ScriptError("'{}' expects up to 2 parameters".format(name), pos)
+        var10 = None
+        if len(args) > 0:
+            if not isinstance(args[0], expression.ConstantNumeric):
+                raise generic.ScriptError("First parameter for '{}' must be a constant".format(name), pos)
+            var10 = args[0].value
+            args = args[1:]
+            if not 0 <= var10 <= 7 or var10 == 2:
+                raise generic.ScriptError("First parameter for '{}' must be in [0-1, 3-7] range".format(name), pos)
+        return StationSpriteset(var10, args, pos)
 
     default_param = [
         (
@@ -674,7 +649,6 @@ def parse_station_layouts(feature, id, layouts):
     ]
 
     actions = []
-    var10map = StationSpritesetVar10Map()
     param_registers = []
     parsed_layouts = []
     varact2parser = action2var.Varaction2Parser(feature)
@@ -699,7 +673,7 @@ def parse_station_layouts(feature, id, layouts):
         param_map.extend(default_param)
 
         layout = ParsedSpriteLayout(registers)
-        layout.process(spritelayout, feature, param_map, actions, var10map)
+        layout.process(spritelayout, feature, param_map, actions)
         layout.parse_registers(varact2parser)
         parsed_layouts.append(layout)
 
@@ -730,4 +704,4 @@ def parse_station_layouts(feature, id, layouts):
         actions.append(varaction2)
         registers_ref = expression.SpriteGroupRef(expression.Identifier(varaction2.name), [], None, varaction2)
 
-    return (actions, var10map, registers_ref)
+    return (actions, registers_ref)

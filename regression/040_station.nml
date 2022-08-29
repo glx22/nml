@@ -49,7 +49,7 @@ spritelayout station_sprite_layout_0 {
         palette: PALETTE_USE_DEFAULT;
     }
     childsprite {
-        sprite: station_spriteset(lbl);
+        sprite: SPRITESET(1, 0);//station_spriteset(lbl);
         xoffset: 17;
         yoffset: 10;
         recolour_mode: RECOLOUR_REMAP;
@@ -73,7 +73,7 @@ spritelayout station_sprite_layout_1(a) {
         palette: PALETTE_USE_DEFAULT;
     }
     childsprite {
-        sprite: station_spriteset(a);
+        sprite: SPRITESET(1, a);//station_spriteset(a);
         xoffset: 20;
         yoffset: 11;
         recolour_mode: RECOLOUR_REMAP;
@@ -91,12 +91,30 @@ spritelayout station_sprite_layout_1(a) {
         palette: PALETTE_USE_DEFAULT;
     }
     childsprite {
-        sprite: station_spriteset2(lbl);
+        sprite: SPRITESET(3, 1);//station_spriteset2(lbl);
         xoffset: 20;
         yoffset: 10;
         recolour_mode: RECOLOUR_REMAP;
         palette: PALETTE_USE_DEFAULT;
     }
+}
+
+switch(FEAT_STATIONS, SELF, cargo1, extra_callback_info1) {
+    1: station_spriteset;
+    3: station_spriteset2;
+    station_spriteset;
+}
+
+switch(FEAT_STATIONS, SELF, cargo0, extra_callback_info1) {
+    1: station_spriteset;
+    3: station_spriteset2;
+    station_spriteset2;
+}
+
+switch(FEAT_STATIONS, SELF, cargodefault, extra_callback_info1) {
+    1: station_spriteset;
+    3: station_spriteset2;
+    station_spriteset;
 }
 
 item (FEAT_STATIONS, basic_station) {
@@ -113,9 +131,9 @@ item (FEAT_STATIONS, basic_station) {
             station_sprite_layout_1(1)
         ];
         anim_speed: company_colour1 + company_colour2;
-        1: station_spriteset;
-        0: station_spriteset2;
-        station_spriteset;
+        1: cargo1;
+        0: cargo0;
+        cargodefault;
     }
 }
 

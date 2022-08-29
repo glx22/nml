@@ -351,10 +351,10 @@ def parse_graphics_block_single_id(
                             actions = action0.get_copy_layout_action0(feature, id, layouts)
                             layouts = station_sprite_layouts[layouts.value]
                         elif isinstance(layouts, expression.Array) and len(layouts.values) % 2 == 0:
-                            actions, var10map, registers_ref = action2layout.parse_station_layouts(
+                            actions, registers_ref = action2layout.parse_station_layouts(
                                 feature, id, layouts.values
                             )
-                            layouts = (var10map, registers_ref)
+                            layouts = registers_ref
                         else:
                             raise generic.ScriptError(
                                 "'{}' must be an array of even length, or the ID of a station".format(cb_name),
@@ -406,7 +406,7 @@ def parse_graphics_block_single_id(
         if purchase_prepare_layout and 0xFF not in cargo_gfx:
             cargo_gfx[0xFF] = cargo_gfx[None]
 
-        var10map, registers_ref = layouts or (None, None)
+        registers_ref = layouts or None
 
         for cargo in sorted(cargo_gfx, key=lambda x: -1 if x is None else x):
             default = cargo_gfx[cargo]
@@ -430,8 +430,6 @@ def parse_graphics_block_single_id(
 
             # Fill var10 dependant choices
             mapping = {0x02: (foundations, None)} if foundations else {}
-            if var10map:
-                var10map.append_mapping(mapping, feature, prepend_action_list, default)
             # No need for in-between varaction2 if there are no registers to set and no var10 dependant choices
             if len(mapping) == 0:
                 if not varact2parser.var_list:
