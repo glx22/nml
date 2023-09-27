@@ -1,0 +1,373 @@
+grf {
+	grfid: "NML\07";
+	/* GRF name and description strings are defined in the lang files */
+	name: string(STR_GRF_NAME);
+	desc: string(STR_GRF_DESCRIPTION);
+	/* This is the first version, start numbering at 0. */
+	version: 0;
+	min_compatible_version: 0;
+}
+
+/* Using parametrized sprite layouts are only valid in OpenTTD r22723 or later.
+ * Earlier versions will choke on those and otherwise disable the NewGRF.
+ */
+if (version_openttd(1,2,0,22723) > openttd_version) {
+	error(FATAL, REQUIRES_OPENTTD, string(STR_VERSION_22723));
+}
+
+cargotable {
+	COAL
+}
+
+spriteset(buffer_spriteset, "buffer.png") {
+	NE:[ 80,  10, 64, 31, -31, 0 ]
+	SW:[ 80,  50, 64, 31, -31, 0 ]
+	NW:[ 80,  90, 64, 31, -31, 0 ]
+	SE:[ 80, 130, 64, 31, -31, 0 ]
+}
+
+template tmpl_building() {
+	[  10,  90, 64, 65, -31, -34 ]
+	[  80,  90, 64, 65, -31, -34 ]
+	[ 150,  90, 64, 65, -31, -34 ]
+	[ 220,  90, 64, 65, -31, -34 ]
+}
+
+spriteset(houses_spriteset, "structures.png") {
+	tmpl_building()
+	[  10, 170, 64, 65, -54, -46 ]
+	[  80, 170, 64, 65, -54, -46 ]
+	[ 150, 170, 64, 65,  -8, -46 ]
+	[ 220, 170, 64, 65,  -8, -46 ]
+}
+
+spritelayout simple_track_X {
+	ground {
+		sprite: GROUNDSPRITE_RAIL_X;
+	}
+	childsprite {
+		sprite: CUSTOM(0, 0);
+	}
+	childsprite {
+		sprite: CUSTOM(0, 1);
+	}
+	// NE Buffer
+	building {
+		sprite: buffer_spriteset(NE);
+		xextent: 1;
+		zextent: 4;
+		hide_sprite: LOAD_TEMP(0);
+	}
+	// SW Buffer
+	building {
+		sprite: buffer_spriteset(SW);
+		xoffset: 16;
+		xextent: 1;
+		zextent: 4;
+		hide_sprite: LOAD_TEMP(1);
+	}
+	// House on south end
+	building {
+		sprite: houses_spriteset(0 + LOAD_TEMP(6) / 3);
+		yoffset: LOAD_TEMP(6);
+		yextent: 4;
+		zextent: 8;
+		hide_sprite: LOAD_TEMP(2);
+	}
+	// House on north end
+	building {
+		sprite: houses_spriteset(1 + LOAD_TEMP(6) / 3);
+		yoffset: LOAD_TEMP(6);
+		yextent: 4;
+		zextent: 8;
+		hide_sprite: LOAD_TEMP(3);
+	}
+	// Crane, truck, building, forklift
+	building {
+		sprite: CUSTOM(1, 0 + LOAD_TEMP(7));
+		yextent: 4;
+		zextent: 20;
+		recolour_mode: RECOLOUR_REMAP;
+		palette:       PALETTE_USE_DEFAULT;
+		hide_sprite: LOAD_TEMP(4);
+	}
+	// Cargo
+	building {
+		sprite: DEFAULT(0);
+		yextent: 4;
+		zextent: 5;
+		hide_sprite: LOAD_TEMP(5);
+	}
+	building {
+		sprite: DEFAULT(1);
+		yoffset: 12;
+		yextent: 4;
+		zextent: 5;
+		hide_sprite: LOAD_TEMP(5);
+	}
+}
+
+spritelayout simple_track_Y {
+	ground {
+		sprite: GROUNDSPRITE_RAIL_Y;
+	}
+	childsprite {
+		sprite: CUSTOM(0, 2);
+	}
+	childsprite {
+		sprite: CUSTOM(0, 3);
+	}
+	// NW Buffer
+	building {
+		sprite: buffer_spriteset(NW);
+		yextent: 1;
+		zextent: 4;
+		hide_sprite: LOAD_TEMP(0);
+	}
+	// SE Buffer
+	building {
+		sprite: buffer_spriteset(SE);
+		yoffset: 16;
+		yextent: 1;
+		zextent: 4;
+		hide_sprite: LOAD_TEMP(1);
+	}
+	// House on south end
+	building {
+		sprite: houses_spriteset(2 + LOAD_TEMP(6) / 3);
+		xoffset: LOAD_TEMP(6);
+		xextent: 4;
+		zextent: 8;
+		hide_sprite: LOAD_TEMP(2);
+	}
+	// House on north end
+	building {
+		sprite: houses_spriteset(3 + LOAD_TEMP(6) / 3);
+		xoffset: LOAD_TEMP(6);
+		xextent: 4;
+		zextent: 8;
+		hide_sprite: LOAD_TEMP(3);
+	}
+	// Crane, truck, building, forklift
+	building {
+		sprite: CUSTOM(1, 2 + LOAD_TEMP(7));
+		xextent: 4;
+		zextent: 20;
+		recolour_mode: RECOLOUR_REMAP;
+		palette:       PALETTE_USE_DEFAULT;
+		hide_sprite: LOAD_TEMP(4);
+	}
+	// Cargo
+	building {
+		sprite: DEFAULT(2);
+		xextent: 4;
+		zextent: 5;
+		hide_sprite: LOAD_TEMP(5);
+	}
+	building {
+		sprite: DEFAULT(3);
+		xoffset: 12;
+		xextent: 4;
+		zextent: 5;
+		hide_sprite: LOAD_TEMP(5);
+	}
+}
+
+switch(FEAT_STATIONS, SELF, fill_temp_2, [
+	STORE_TEMP(platform_position_from_start(PLATFORM_SAME_DIRECTION) - platform_position_from_end(PLATFORM_SAME_DIRECTION), 8),
+	STORE_TEMP(platform_length(PLATFORM_SAME_DIRECTION) <= 4 | (LOAD_TEMP(8) != 0 & LOAD_TEMP(8) != 1), 4), // hide crane, truck, building, forklift
+	STORE_TEMP(!LOAD_TEMP(4), 5), // hide cargo
+	STORE_TEMP(hasbit((getbits(platform_number_from_start(PLATFORM_SAME_DIRECTION), 0, 2) * 4 + getbits(random_bits_station, 15, 2) + getbits(random_bits_station, 0, 4)) % 16, 1), 7), // offset for crane, truck, building, forklift
+]) { return; }
+
+switch(FEAT_STATIONS, SELF, fill_temp_1, [
+	STORE_TEMP(1, 5), // hide cargo
+	STORE_TEMP(platform_position_from_end(PLATFORM_SAME_DIRECTION) != 0, 2), // hide south-end house
+	STORE_TEMP(platform_position_from_start(PLATFORM_SAME_DIRECTION) != 0, 3), // hide north-end house
+	STORE_TEMP(platform_number_from_start(PLATFORM_SAME_DIRECTION) % 2 ? 0 : 12, 6), // offset for houses
+	LOAD_TEMP(2) + LOAD_TEMP(3),
+]) {
+	2: fill_temp_2; // no houses, maybe something else ?
+	return;
+}
+
+switch(FEAT_STATIONS, SELF, fill_temp_0, [
+	STORE_TEMP(hasbit(rail_continuation, 1), 0), // hide north-end buffer
+	STORE_TEMP(hasbit(rail_continuation, 0), 1), // hide south-end buffer
+	STORE_TEMP(1, 2), // hide south-end house
+	STORE_TEMP(1, 3), // hide north-end house
+	STORE_TEMP(1, 4), // hide crane, truck, building, forklift
+	LOAD_TEMP(0) + LOAD_TEMP(1),
+]) {
+	2: fill_temp_1; // no buffers, maybe a building ?
+	return;
+}
+
+switch(FEAT_STATIONS, SELF, purchase_fill_temp, [
+	STORE_TEMP(1, 0), // hide north-end buffer
+	STORE_TEMP(1, 1), // hide south-end buffer
+	STORE_TEMP(1, 2), // hide south-end house
+	STORE_TEMP(1, 3), // hide north-end house
+	STORE_TEMP(1, 4), // hide crane, truck, building, forklift
+	STORE_TEMP(1, 5), // hide cargo
+]) { return; }
+
+spriteset(cranes_spriteset, "cranes.png") {
+	tmpl_building()
+}
+
+spriteset(trucks_spriteset, "trucks_small.png") {
+	tmpl_building()
+}
+
+spriteset(forklifts_spriteset, "forklifts_small.png") {
+	tmpl_building()
+}
+
+switch(FEAT_STATIONS, SELF, custom_building, getbits((getbits(platform_number_from_start(PLATFORM_SAME_DIRECTION), 0, 2) * 4 + getbits(random_bits_station, 15, 2) + getbits(random_bits_station, 0, 4)) % 16, 2, 2)) {
+	0: return cranes_spriteset;
+	1: return trucks_spriteset;
+	2: return houses_spriteset;
+	3: return forklifts_spriteset;
+}
+
+template tmpl_cargo(x) {
+	[  10 + x,  90, 64, 65, -31, -34 ]
+	[  10 + x, 170, 64, 65, -54, -46 ]
+	[ 150 + x,  90, 64, 65, -31, -34 ]
+	[ 150 + x, 170, 64, 65,  -8, -46 ]
+}
+
+spriteset(no_cargo, "null.png") {
+	tmpl_cargo(0)
+}
+
+spriteset(little_coal_cargo, "coal_cargo.png") {
+	tmpl_cargo(0)
+}
+spriteset(lots_coal_cargo, "coal_cargo.png") {
+	tmpl_cargo(70)
+}
+spritegroup coal_cargo {
+	little: little_coal_cargo;
+	lots: lots_coal_cargo;
+}
+
+template tmpl_ground(x) {
+	[ x,  50, 64, 31, -31, 0 ]
+	[ x,  90, 64, 31, -31, 0 ]
+	[ x, 130, 64, 31, -31, 0 ]
+	[ x, 170, 64, 31, -31, 0 ]
+}
+
+spriteset(asphalt_track_ground, "groundtiles.png") {
+	tmpl_ground(80)
+}
+
+item(FEAT_STATIONS, asphalt_track) {
+	property {
+		/* The class allows to sort stations into categories. */
+		class:                  "NML_";
+		/* If no other NewGRF provides this class before us, we have to name it */
+		classname:              string(STR_NAME_STATCLASS);
+		/* Name of this particular station */
+		name:                   string(STR_NAME_STATION_ASPHALT);
+		cargo_threshold: 500;
+	}
+	graphics {
+		sprite_layouts: [simple_track_X, simple_track_Y];
+		custom_spritesets: [asphalt_track_ground, custom_building];
+		prepare_layout: fill_temp_0();
+		purchase_prepare_layout: purchase_fill_temp();
+		COAL: coal_cargo;
+		no_cargo;
+	}
+}
+
+spriteset(asphalt_dirty_track_ground, "groundtiles.png") {
+	tmpl_ground(150)
+}
+
+item(FEAT_STATIONS, asphalt_dirty_track) {
+	property {
+		/* The class allows to sort stations into categories. */
+		class:                  "NML_";
+		/* Name of this particular station */
+		name:                   string(STR_NAME_STATION_ASPHALT_DIRTY);
+		cargo_threshold: 500;
+	}
+	graphics {
+		sprite_layouts: asphalt_track;
+		custom_spritesets: [asphalt_dirty_track_ground, custom_building];
+		prepare_layout: fill_temp_0();
+		purchase_prepare_layout: purchase_fill_temp();
+		COAL: coal_cargo;
+		no_cargo;
+	}
+}
+
+spriteset(mud_track_ground, "groundtiles.png") {
+	tmpl_ground(10)
+}
+
+item(FEAT_STATIONS, mud_track) {
+	property {
+		/* The class allows to sort stations into categories. */
+		class:                  "NML_";
+		/* Name of this particular station */
+		name:                   string(STR_NAME_STATION_MUD);
+		cargo_threshold: 500;
+	}
+	graphics {
+		sprite_layouts: asphalt_track;
+		custom_spritesets: [mud_track_ground, custom_building];
+		prepare_layout: fill_temp_0();
+		purchase_prepare_layout: purchase_fill_temp();
+		COAL: coal_cargo;
+		no_cargo;
+	}
+}
+
+spriteset(cobble_track_ground, "groundtiles.png") {
+	tmpl_ground(220)
+}
+
+item(FEAT_STATIONS, cobble_track) {
+	property {
+		/* The class allows to sort stations into categories. */
+		class:                  "NML_";
+		/* Name of this particular station */
+		name:                   string(STR_NAME_STATION_COBBLE);
+		cargo_threshold: 500;
+	}
+	graphics {
+		sprite_layouts: asphalt_track;
+		custom_spritesets: [cobble_track_ground, custom_building];
+		prepare_layout: fill_temp_0();
+		purchase_prepare_layout: purchase_fill_temp();
+		COAL: coal_cargo;
+		no_cargo;
+	}
+}
+
+spriteset(slab_track_ground, "groundtiles.png") {
+	tmpl_ground(360)
+}
+
+item(FEAT_STATIONS, slab_track) {
+	property {
+		/* The class allows to sort stations into categories. */
+		class:                  "NML_";
+		/* Name of this particular station */
+		name:                   string(STR_NAME_STATION_SLAB);
+	}
+	graphics {
+		sprite_layouts: asphalt_track;
+		custom_spritesets: [slab_track_ground, custom_building];
+		prepare_layout: fill_temp_0();
+		purchase_prepare_layout: purchase_fill_temp();
+		COAL: coal_cargo;
+		no_cargo;
+	}
+}
+

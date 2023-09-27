@@ -15,7 +15,7 @@
 "B" "BLTR" \w1 "8"
 00
 00
-2 * 193 08 08 "NML\06" "NML Example NewGRF: Station" 00 "\8ENML Example NewGRF: Station\0D\98This NewGRF is intended to provide a coding example for the high-level NewGRF-coding language NML.\0DConversion of CHIPS Cow pens." 00
+2 * 198 08 08 "NML\06" "NML Example NewGRF: Station" 00 "\8ENML Example NewGRF: Station\0D\98This NewGRF is intended to provide a coding example for the high-level NewGRF-coding language NML.\0DConversion of some CHIPS stations." 00
 3 * 18 04 04 FF 01 \wxDC00 "NML Example" 00
 
 // param[126] = param[161]
