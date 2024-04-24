@@ -19,6 +19,7 @@ from nml.ast import base_statement, general
 
 total_action2_ids = 0x100
 free_action2_ids = list(range(0, total_action2_ids))
+used_action2_ids = {}
 
 """
 Statistics about spritegroups.
@@ -106,10 +107,12 @@ class Action2(base_action.BaseAction):
                 self.id = free_action2_ids[0]
             else:
                 self.id = free_action2_ids.pop()
+                used_action2_ids[self.id] = self.name
                 num_used = total_action2_ids - len(free_action2_ids)
                 if num_used > spritegroup_stats[0]:
                     spritegroup_stats = (num_used, self.pos)
         except IndexError:
+            print(used_action2_ids)
             raise generic.ScriptError(
                 "Unable to allocate ID for [random]switch, sprite set/layout/group or produce-block."
                 " Try reducing the number of such blocks.",
@@ -215,6 +218,7 @@ def free_references(source_action):
         act2.num_refs -= 1
         if act2.num_refs == 0:
             free_action2_ids.append(act2.id)
+            del used_action2_ids[act2.id]
 
 
 # Features using sprite groups directly: vehicles, stations, canals, cargos, railtypes, airports, roadtypes, tramtypes
