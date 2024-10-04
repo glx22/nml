@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12', 'pypy3.9']
+        python-version: ['3.9', '3.10', '3.11', '3.12', 'pypy3.9', '3.13-dev']
         exclude:
           # Prebuilt pillow wheels aren't always available for the relevant PyPy version.
           # The Ubuntu runner has zlib headers and can build it locally, but these can't without more work.
