@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License along
 with NML; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."""
 
+import codecs
 import ply.yacc as yacc
 
 from nml import expression, generic, nmlop, tokens, unit
@@ -59,6 +60,8 @@ class NMLParser:
     @type parser: L{ply.yacc}
     """
 
+    files = []
+
     def __init__(self, rebuild=False, debug=False):
         if debug:
             try:
@@ -79,9 +82,16 @@ class NMLParser:
             tabmodule="nml.generated.parsetab",
         )
 
-    def parse(self, text, input_filename):
-        self.lexer.setup(text, input_filename)
-        return self.parser.parse(None, lexer=self.lexer.lexer)
+    def parse(self, text, input_filename, extra=""):
+        input_filename = generic.find_file(input_filename)
+        fname = "{}{}".format(input_filename, extra)
+        if input_filename in NMLParser.files:
+            raise generic.ScriptError("Include loop detected: {}".format(fname))
+        self.lexer.setup(text, fname)
+        NMLParser.files.append(input_filename)
+        result = self.parser.parse(None, lexer=self.lexer.lexer)
+        NMLParser.files.pop()
+        return result
 
     # operator precedence (lower in the list = higher priority)
     precedence = (
@@ -114,7 +124,8 @@ class NMLParser:
 
     def p_script(self, t):
         """script :
-        | script main_block"""
+        | script main_block
+        | script include"""
         if len(t) == 1:
             t[0] = []
         else:
@@ -157,6 +168,18 @@ class NMLParser:
         | basecost
         | constant"""
         t[0] = t[1]
+
+    def p_include(self, t):
+        "include : INCLUDE LPAREN STRING_LITERAL RPAREN SEMICOLON"
+        included_filename = t[3].value
+        try:
+            with codecs.open(generic.find_file(included_filename), "r", "utf-8") as input:
+                script = input.read()
+        except UnicodeDecodeError as ex:
+            raise generic.ScriptError("Input file is not utf-8 encoded: {}".format(ex))
+        # Strip a possible BOM
+        script = script.lstrip(str(codecs.BOM_UTF8, "utf-8"))
+        t[0] = NMLParser().parse(script, included_filename, " (included from {})".format(t.lineno(1)))
 
     #
     # Expressions
