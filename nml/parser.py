@@ -59,22 +59,22 @@ class NMLParser:
     @type parser: L{ply.yacc}
     """
 
-    def __init__(self, rebuild=False, debug=False):
-        if debug:
-            try:
-                import os
-
-                os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__), "generated", "parsetab.py")))
-            except FileNotFoundError:
-                # Tried to remove a non existing file
-                pass
+    def __init__(self, debug=False):
+        try:
+            import os
+            table = os.path.normpath(os.path.join(os.path.dirname(__file__), "generated", "parsetab.py"))
+            if os.stat(__file__).st_mtime > os.stat(table).st_mtime:
+                os.remove(table)
+        except FileNotFoundError:
+            # Tried to stat/remove a non existing file
+            pass
         self.lexer = tokens.NMLLexer()
-        self.lexer.build(rebuild or debug)
+        self.lexer.build()
         self.tokens = self.lexer.tokens
         self.parser = yacc.yacc(
             module=self,
             debug=debug,
-            optimize=not (rebuild or debug),
+            optimize=not debug,
             write_tables=not debug,
             tabmodule="nml.generated.parsetab",
         )

@@ -199,13 +199,6 @@ def parse_cli(argv):
         ),
     )
     opt_parser.add_option(
-        "-R",
-        "--rebuild-parser",
-        action="store_true",
-        dest="rebuild_parser",
-        help="Force regeneration of parser tables.",
-    )
-    opt_parser.add_option(
         "-D", "--debug-parser", action="store_true", dest="debug_parser", help="Enable debug mode for parser."
     )
     opt_parser.add_option(
@@ -357,7 +350,6 @@ def main(argv):
         opts.crop,
         opts.forced_palette,
         opts.md5_filename,
-        opts.rebuild_parser,
         opts.debug_parser,
         opts.disable_palette_validation,
     )
@@ -383,7 +375,6 @@ def nml(
     crop_sprites,
     forced_palette,
     md5_filename,
-    rebuild_parser,
     debug_parser,
     disable_palette_validation,
 ):
@@ -432,7 +423,7 @@ def nml(
 
     generic.print_progress("Init parser ...")
 
-    nml_parser = parser.NMLParser(rebuild_parser, debug_parser)
+    nml_parser = parser.NMLParser(debug_parser)
     if input_filename is None:
         input_filename = "input"
 

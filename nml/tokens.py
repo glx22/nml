@@ -257,18 +257,18 @@ class NMLLexer:
         )
         sys.exit(1)
 
-    def build(self, rebuild=False):
+    def build(self):
         """
         Initial construction of the scanner.
         """
-        if rebuild:
-            try:
-                import os
-
-                os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__), "generated", "lextab.py")))
-            except FileNotFoundError:
-                # Tried to remove a non existing file
-                pass
+        try:
+            import os
+            table = os.path.normpath(os.path.join(os.path.dirname(__file__), "generated", "lextab.py"))
+            if os.stat(__file__).st_mtime > os.stat(table).st_mtime:
+                os.remove(table)
+        except FileNotFoundError:
+            # Tried to stat/git remove a non existing file
+            pass
         self.lexer = lex.lex(module=self, optimize=1, lextab="nml.generated.lextab")
 
     def setup(self, text, fname):
