@@ -5,7 +5,7 @@ block_cipher = None
 
 a = Analysis(['nmlc'],
              pathex=['.'],
-             binaries=[('./nml_lz77.*.pyd', '.')],
+             binaries=[('./build/lib.*/nml_lz77.*.pyd', '.')],
              datas=[],
              hiddenimports=[
                 'nml.generated.lextab',
