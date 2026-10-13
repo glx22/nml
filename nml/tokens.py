@@ -164,11 +164,13 @@ class NMLLexer:
     def t_include_INCLUDE(self, t):
         r"\binclude\b"
 
-        def expect(type):
+        def expect(types):
+            if not isinstance(types, list):
+                types = [types]
             t = self.lexer.token()
             if t is None:
                 raise generic.ScriptError("Syntax error, unexpected end-of-file")
-            if t.type != type:
+            if t.type not in types:
                 raise generic.ScriptError('Syntax error, unexpected token "{}"'.format(t.value), t.lineno)
             return t
 
@@ -176,7 +178,11 @@ class NMLLexer:
         self.lexer.push_state("INITIAL")
         expect("LPAREN")
         fname = expect("STRING_LITERAL").value.value
-        expect("RPAREN")
+        self.defines.append(self.defines[0].copy())
+        while expect(["COMMA", "RPAREN"]).type == "COMMA":
+            id = expect("ID").value.value
+            expect("EQ")
+            self.defines[0][id] = expect("STRING_LITERAL").value.value
         expect("SEMICOLON")
         self.lexer.pop_state()
         self.lexer.lexmatch = lexmatch
@@ -187,7 +193,7 @@ class NMLLexer:
             if generic.find_file(i.filename) == generic.find_file(fname):
                 raise generic.ScriptError("Include loop detected: {}".format(fname), self.lexer.lineno)
         with codecs.open(generic.find_file(fname), "r", "utf-8") as input:
-            script = generic.read_file(input)
+            script = generic.read_file(input, self.defines[0])
         self.setup(script, fname)
 
     def t_FLOAT(self, t):
@@ -296,6 +302,7 @@ class NMLLexer:
             self.lexer.input(lexdata)
             self.lexer.lexpos = lexpos
             self.lexer.lineno = self.includes.pop()
+            self.defines[0] = self.defines.pop()
         if self.lexer.lexpos != self.lexer.lexlen:
             return self.lexer.token()
         return None
@@ -308,6 +315,7 @@ class NMLLexer:
         self.lexer.begin("include")
         self.includes = []
         self.states = []
+        self.defines = [{}]
 
     def setup(self, text, fname):
         """
