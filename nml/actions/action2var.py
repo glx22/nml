@@ -64,7 +64,7 @@ class Action2Var(action2.Action2):
                         + "Please reduce the complexity of your code.",
                         self.pos,
                     )
-                location = self.tmp_locations[0]
+                location = self.tmp_locations.pop()
                 self.remove_tmp_location(location, False)
                 var.set_register(location)
 

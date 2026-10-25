@@ -94,7 +94,7 @@ class Action2(base_action.BaseAction):
         # 0x80 - 0xFE: used by NML
         # 0xFF: Used for some house variables
         # 0x100 - 0x10F: Special meaning (used for some CB results)
-        self.tmp_locations = list(range(0x80, 0x80 + total_tmp_locations))
+        self.tmp_locations = set(range(0x80, 0x80 + total_tmp_locations))
 
     def prepare_output(self, sprite_num):
         free_references(self)
@@ -155,6 +155,8 @@ class Action2(base_action.BaseAction):
 
         if location in self.tmp_locations:
             self.tmp_locations.remove(location)
+
+        if not force_recursive:
             num_used = total_tmp_locations - len(self.tmp_locations)
             if num_used > a2register_stats[0]:
                 a2register_stats = (num_used, self.pos)
